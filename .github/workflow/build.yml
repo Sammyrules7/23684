@@ -1,1 +1,42 @@
+name: Build and Release
 
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Amazon Corretto 17
+      - name: Set up Amazon Corretto 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'  # Use Amazon Corretto
+
+      # Step 3: Cache Gradle dependencies to speed up builds
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # Step 4: Build with Gradle
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+
+      # Step 5: Create Release and Upload Artifact
+      - name: Create Release and Upload Artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/libs/*.jar  # Adjust the path to your build artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
